@@ -1,0 +1,31 @@
+name: Local PR preflight (NOT full QA)
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: local-preflight-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  preflight:
+    name: Preflight only - no auto-merge
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate repository skeleton (NOT acceptance tests)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s README.md
+          test -n "$(git ls-files)"
+          if command -v python3 >/dev/null; then
+            python3 -m compileall -q -x '(^|/)(\.git|\.venv|venv|node_modules|target|build)/' .
+          fi
+          echo "::notice::Preflight passed, but full application tests were NOT run. Manual review is required."
