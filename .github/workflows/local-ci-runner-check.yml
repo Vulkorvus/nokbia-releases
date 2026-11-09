@@ -1,0 +1,20 @@
+name: Local CI runner check
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  runner-check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, vulkorvus-public-ci]
+    timeout-minutes: 5
+    steps:
+      - name: Verify runner environment
+        shell: bash
+        run: |
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          test "$(id -u)" -ne 0
+          printf '%s\n' 'Local CI runner is ready'
