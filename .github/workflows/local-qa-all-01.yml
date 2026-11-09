@@ -1,0 +1,46 @@
+name: LOCAL-QA-ALL-01
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-qa-all-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  local-qa:
+    name: Local QA (docs)
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 15
+    env:
+      QA_PROFILE: docs
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Run repository preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Commit: $GITHUB_SHA"
+          echo "Runner: $(hostname)"
+          test -n "$(git ls-files)"
+          if [ "$QA_PROFILE" = "docs" ]; then
+            test -s README.md
+            echo "PASS: documentation preflight (not executable code tests)"
+          elif [ "$QA_PROFILE" = "python-syntax" ]; then
+            command -v python3
+            python3 -m compileall -q .
+            echo "PASS: Python syntax smoke check (not full functional tests)"
+          else
+            exit 2
+          fi
+          echo "### LOCAL-QA-ALL-01" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repository: $GITHUB_REPOSITORY" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Profile: $QA_PROFILE" >> "$GITHUB_STEP_SUMMARY"
