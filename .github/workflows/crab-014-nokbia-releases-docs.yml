@@ -1,0 +1,33 @@
+name: CRAB-014 nokbia-releases documentation QA
+on:
+  push:
+    branches:
+      - ci/crab-014-nokbia-releases-docs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  docs:
+    name: Docs-only repository integrity
+    if: github.repository == 'Vulkorvus/nokbia-releases'
+    runs-on: [crab-ci, crab-docs]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Verify SHA, repository, runner and nonempty docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'Vulkorvus/nokbia-releases'
+          test "$GITHUB_REF_NAME" = 'ci/crab-014-nokbia-releases-docs'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          [[ "$RUNNER_NAME" == crab14-docs-* ]]
+          test -s README.md
+          test -n "$(git ls-files)"
+          echo "PASS: documentation structure (NOT executable project QA)"
+      - name: Document test boundaries
+        shell: bash
+        run: echo "Documentation-only repository: no runtime code tests were executed." >> "$GITHUB_STEP_SUMMARY"
