@@ -1,0 +1,69 @@
+name: Nokbia Releases PR documentation QA (CrabOS)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nokbia-releases-pr-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Release repository docs preflight (not binary QA)
+    if: github.repository == 'Vulkorvus/nokbia-releases' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: crabos-crab-docs-${{ github.run_id }}-${{ github.run_attempt }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact revision without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+          fetch-depth: 2
+
+      - name: Validate repository, runner and exact checkout
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = 'Vulkorvus/nokbia-releases'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          [[ "$RUNNER_NAME" == crab33-* ]]
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            test "$GITHUB_BASE_REF" = main
+            test "$(git rev-parse HEAD^2)" = "$EXPECTED_HEAD_SHA"
+            test "$(git cat-file -p HEAD | grep -c '^parent ')" = 2
+          else
+            test "$GITHUB_REF_NAME" = main || test "$GITHUB_REF_NAME" = feat/local-pr-preflight-01
+          fi
+
+      - name: Check source-controlled release repository documents
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$(git ls-files)"
+          test -s README.md
+          grep -Fxq '# Nokbia Releases' README.md
+          grep -Fq 'Public binary releases' README.md
+          test -s .github/workflows/local-qa-all-01.yml
+          echo 'PASS: tracked release-repository docs structure'
+          echo 'NOTE: GitHub Release assets are not built, downloaded, signed or verified here.'
+
+      - name: Record limited QA scope
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '### nokbia-releases PR docs-only check'
+            echo "- Checked commit: $GITHUB_SHA"
+            echo "- Runner: $RUNNER_NAME"
+            echo '- Scope: README, tracked repo structure, exact PR merge identity'
+            echo '- Excludes: client/launcher binary tests, artifact hashes, release publishing and LIVE'
+            echo '- No automatic merge'
+          } >> "$GITHUB_STEP_SUMMARY"
