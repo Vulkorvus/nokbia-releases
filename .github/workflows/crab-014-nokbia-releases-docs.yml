@@ -1,9 +1,9 @@
 name: CRAB-014 nokbia-releases documentation QA
 on:
   push:
-    branches:
-      - ci/crab-014-nokbia-releases-docs
+    branches: [ci/crab-014-nokbia-releases-docs]
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:
@@ -30,4 +30,5 @@ jobs:
           echo "PASS: documentation structure (NOT executable project QA)"
       - name: Document test boundaries
         shell: bash
-        run: echo "Documentation-only repository: no runtime code tests were executed." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Documentation-only repository: no runtime code tests were executed." >> "$GITHUB_STEP_SUMMARY"
