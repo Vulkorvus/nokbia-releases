@@ -13,7 +13,7 @@ concurrency:
 jobs:
   local-qa:
     name: Local QA (docs)
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ${{ format('crabos-crab-docs-{0}-{1}', github.run_id, github.run_attempt) }}
     timeout-minutes: 15
     env:
       QA_PROFILE: docs
@@ -29,7 +29,10 @@ jobs:
           set -euo pipefail
           echo "Repository: $GITHUB_REPOSITORY"
           echo "Commit: $GITHUB_SHA"
-          echo "Runner: $(hostname)"
+          echo "Runner: $RUNNER_NAME"
+          test "$GITHUB_REPOSITORY" = "Vulkorvus/nokbia-releases"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          [[ "$RUNNER_NAME" == crab33-* ]]
           test -n "$(git ls-files)"
           if [ "$QA_PROFILE" = "docs" ]; then
             test -s README.md
