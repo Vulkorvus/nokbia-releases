@@ -9,8 +9,8 @@ permissions:
 jobs:
   docs:
     name: Docs-only repository integrity
-    if: github.repository == 'Vulkorvus/nokbia-releases'
-    runs-on: [crab-ci, crab-docs]
+    if: github.repository == 'Vulkorvus/nokbia-releases' && github.ref == 'refs/heads/ci/crab-014-nokbia-releases-docs'
+    runs-on: crabos-crab-docs-${{ github.run_id }}-${{ github.run_attempt }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
           test "$GITHUB_REPOSITORY" = 'Vulkorvus/nokbia-releases'
           test "$GITHUB_REF_NAME" = 'ci/crab-014-nokbia-releases-docs'
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          [[ "$RUNNER_NAME" == crab14-docs-* ]]
+          [[ "$RUNNER_NAME" == crab33-* ]]
           test -s README.md
           test -n "$(git ls-files)"
           echo "PASS: documentation structure (NOT executable project QA)"
